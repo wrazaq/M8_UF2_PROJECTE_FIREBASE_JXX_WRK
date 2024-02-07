@@ -57,52 +57,40 @@ public class SignUp extends AppCompatActivity {
         sign_up_btn = binding.signUpBtn;
         click_to_login = binding.loginNow;
 
-        click_to_login.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-            Intent intent = new Intent(getApplicationContext(), Login.class);
-            startActivity(intent);
-            finish();
-            }
+        click_to_login.setOnClickListener(v -> {
+        Intent intent = new Intent(getApplicationContext(), Login.class);
+        startActivity(intent);
+        finish();
         });
 
-        sign_up_btn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Log.d(TAG, "Button clicked");
-                email = String.valueOf(editTextEmail.getText());
-                password = String.valueOf(editTextPassword.getText());
+        sign_up_btn.setOnClickListener(view -> {
+            Log.d(TAG, "Button clicked");
+            email = String.valueOf(editTextEmail.getText());
+            password = String.valueOf(editTextPassword.getText());
 
-                if (TextUtils.isEmpty(email)&&TextUtils.isEmpty(password)){
-                    Toast.makeText(SignUp.this, "The email and password cannot be empty", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-
-                if (TextUtils.isEmpty(email)) {
-                    Toast.makeText(SignUp.this, "The email cannot be empty", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-
-                if (TextUtils.isEmpty(password)) {
-                    Toast.makeText(SignUp.this, "The password cannot be empty", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-
-                mAuth.createUserWithEmailAndPassword(email, password)
-                        .addOnCompleteListener(new OnCompleteListener<AuthResult>() {
-                            @Override
-                            public void onComplete(@NonNull Task<AuthResult> task) {
-                                if (task.isSuccessful()) {
-                                    Toast.makeText(SignUp.this, "Account created.", Toast.LENGTH_SHORT).show();
-                                } else {
-                                    Toast.makeText(SignUp.this, "Authentication failed.", Toast.LENGTH_SHORT).show();
-                                }
-                            }
-                        });
+            if (TextUtils.isEmpty(email)&&TextUtils.isEmpty(password)){
+                Toast.makeText(SignUp.this, "The email and password cannot be empty", Toast.LENGTH_SHORT).show();
+                return;
             }
+
+            if (TextUtils.isEmpty(email)) {
+                Toast.makeText(SignUp.this, "The email cannot be empty", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (TextUtils.isEmpty(password)) {
+                Toast.makeText(SignUp.this, "The password cannot be empty", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            mAuth.createUserWithEmailAndPassword(email, password)
+                    .addOnCompleteListener(task -> {
+                        if (task.isSuccessful()) {
+                            Toast.makeText(SignUp.this, "Account created successfully.", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(SignUp.this, "Authentication failed.", Toast.LENGTH_SHORT).show();
+                        }
+                    });
         });
-
-        // [END create_user_with_email]
-
     }
 }
