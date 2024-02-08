@@ -33,16 +33,18 @@ public class SignUp extends AppCompatActivity {
     String email, password;
 
     private TextView click_to_login;
+
     @Override
-    public void onStart(){
+    public void onStart() {
         super.onStart();
         FirebaseUser currentUser = mAuth.getCurrentUser();
-        if (currentUser != null){
+        if (currentUser != null) {
             Intent intent = new Intent(getApplicationContext(), MainActivity.class);
             startActivity(intent);
             finish();
         }
     }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -58,9 +60,9 @@ public class SignUp extends AppCompatActivity {
         click_to_login = binding.loginNow;
 
         click_to_login.setOnClickListener(v -> {
-        Intent intent = new Intent(getApplicationContext(), Login.class);
-        startActivity(intent);
-        finish();
+            Intent intent = new Intent(getApplicationContext(), Login.class);
+            startActivity(intent);
+            finish();
         });
 
         sign_up_btn.setOnClickListener(view -> {
@@ -68,7 +70,7 @@ public class SignUp extends AppCompatActivity {
             email = String.valueOf(editTextEmail.getText());
             password = String.valueOf(editTextPassword.getText());
 
-            if (TextUtils.isEmpty(email)&&TextUtils.isEmpty(password)){
+            if (TextUtils.isEmpty(email) && TextUtils.isEmpty(password)) {
                 Toast.makeText(SignUp.this, "The email and password cannot be empty", Toast.LENGTH_SHORT).show();
                 return;
             }

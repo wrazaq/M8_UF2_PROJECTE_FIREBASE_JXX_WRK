@@ -19,6 +19,8 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.SetOptions;
+import com.google.firebase.messaging.FirebaseMessaging;
 
 import java.nio.file.FileStore;
 import java.util.HashMap;
@@ -65,6 +67,8 @@ public class MainActivity extends AppCompatActivity {
         }
         else {
             user_details.setText(user.getEmail());
+            updateToken();
+
         }
         logOut_button.setOnClickListener(v -> {
             FirebaseAuth.getInstance().signOut();
@@ -72,14 +76,37 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
             finish();
         });
-        binding.saveDocumentBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                saveDocument(v);
-            }
-        });
-
+        binding.saveDocumentBtn.setOnClickListener(v -> saveDocument(v));
     }
+
+    private void updateToken() {
+        FirebaseMessaging.getInstance().getToken()
+                .addOnSuccessListener(token -> {
+                    if (token != null) {
+                        Log.d(TAG, "Token: " + token);
+                        updateTokenInFirebase(token);
+                    } else {
+                        Log.w(TAG, "FCM token is null");
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Failed to get FCM token", e);
+                });
+    }
+
+    private void updateTokenInFirebase(String token) {
+        String userId = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid();
+
+        Map<String, Object> tokenMap = new HashMap<>();
+        tokenMap.put("userToken", token);
+
+        FirebaseFirestore.getInstance().collection("users")
+                .document(userId)
+                .set(tokenMap, SetOptions.merge())
+                .addOnSuccessListener(unused -> Log.d(TAG, "FCM token updated in Firestore"))
+                .addOnFailureListener(e -> Log.e(TAG, "Error updating FCM token in Firestore", e));
+    }
+
 
     public void saveDocument(View v){
         String title = editTitle.getText().toString();
@@ -90,18 +117,9 @@ public class MainActivity extends AppCompatActivity {
         document.put(KEY_DESCRIPTION, description);
 
         db.collection("document").document("My first Document").set(document)
-                .addOnSuccessListener(new OnSuccessListener<Void>() {
-                    @Override
-                    public void onSuccess(Void unused) {
-                        Toast.makeText(MainActivity.this, "Document saved", Toast.LENGTH_SHORT).show();
-                    }
-                }).addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Toast.makeText(MainActivity.this, "Error", Toast.LENGTH_SHORT).show();
-                        Log.d(TAG,e.toString());
-
-                    }
+                .addOnSuccessListener(unused -> Toast.makeText(MainActivity.this, "Document saved", Toast.LENGTH_SHORT).show()).addOnFailureListener(e -> {
+                    Toast.makeText(MainActivity.this, "Error", Toast.LENGTH_SHORT).show();
+                    Log.d(TAG,e.toString());
                 });
     }
 }
