@@ -147,9 +147,14 @@ public class MainActivity extends AppCompatActivity {
 
         // Set the editing status in Firestore
         db.collection("editingStatus").document("MyEditingStatus").set(editingStatus)
-                .addOnSuccessListener(unused -> Log.d(TAG, "Editing status set"))
+                .addOnSuccessListener(unused -> {
+                    Log.d(TAG, "Editing status set");
+                    // After setting, update editing status to indicate no ongoing edits
+                    updateEditingStatus(false);
+                })
                 .addOnFailureListener(e -> Log.e(TAG, "Error setting editing status", e));
     }
+
 
 
     private void updateDocument(String title, String description) {
@@ -167,6 +172,8 @@ public class MainActivity extends AppCompatActivity {
                 .addOnFailureListener(e -> {
                     Toast.makeText(MainActivity.this, "Error", Toast.LENGTH_SHORT).show();
                     Log.d(TAG, e.toString());
+                    // If there's an error, update editing status to indicate no ongoing edits
+                    updateEditingStatus(false);
                 });
     }
 
