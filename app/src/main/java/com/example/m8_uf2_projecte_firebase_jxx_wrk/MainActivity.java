@@ -1,7 +1,6 @@
 package com.example.m8_uf2_projecte_firebase_jxx_wrk;
 
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
@@ -16,16 +15,13 @@ import android.widget.Toast;
 
 
 import com.example.m8_uf2_projecte_firebase_jxx_wrk.databinding.ActivityMainBinding;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.SetOptions;
-import com.google.firebase.messaging.FirebaseMessagingService;
-import com.google.firebase.messaging.RemoteMessage;
 
 
 import java.util.HashMap;
@@ -73,13 +69,7 @@ public class MainActivity extends AppCompatActivity {
             updateToken();
 
         }
-        logOut_button.setOnClickListener(v -> {
-            FirebaseAuth.getInstance().signOut();
-            Intent intent = new Intent(getApplicationContext(), Login.class);
-            startActivity(intent);
-            finish();
-        });
-        binding.saveDocumentBtn.setOnClickListener(v -> saveDocument(v));
+        binding.saveDocumentBtn.setOnClickListener(this::saveDocument);
     }
 
     private void updateToken() {
@@ -115,75 +105,72 @@ public class MainActivity extends AppCompatActivity {
         String title = editTitle.getText().toString();
         String description = editDescription.getText().toString();
 
-        // Check and set editing status before updating the document
-        checkAndSetEditingStatus(true, title, description);
+        checkAndSetEditingStatus(title, description);
     }
 
-    private void checkAndSetEditingStatus(boolean isBeingEdited, String title, String description) {
+    public void logoutAndResetEditingStatus(View v) {
+
+        db.collection("editingStatus").document("MyEditingStatus")
+                .update("currentUserId", FieldValue.delete())
+                .addOnSuccessListener(aVoid -> Log.d(TAG, "Owner ID removed from editingStatus"))
+                .addOnFailureListener(e -> Log.e(TAG, "Error removing Owner ID from editingStatus", e));
+
+
+        updateEditingStatus(false);
+
+        FirebaseAuth.getInstance().signOut();
+
+        Intent intent = new Intent(getApplicationContext(), Login.class);
+        startActivity(intent);
+        finish();
+    }
+
+
+    private void updateEditingStatus(boolean isBeingEdited) {
+        DocumentReference editingStatusRef = db.collection("editingStatus").document("MyEditingStatus");
+
+        Map<String, Object> updateData = new HashMap<>();
+        updateData.put("isBeingEdited", isBeingEdited);
+        if (isBeingEdited) {
+            updateData.put("currentUserId", user.getUid());
+        }
+        editingStatusRef.update(updateData)
+                .addOnSuccessListener(unused -> Log.d(TAG, "Editing status updated"))
+                .addOnFailureListener(e -> Log.e(TAG, "Error updating editing status", e));
+    }
+
+    private void checkAndSetEditingStatus(String title, String description) {
         DocumentReference editingStatusRef = db.collection("editingStatus").document("MyEditingStatus");
 
         editingStatusRef.get().addOnSuccessListener(documentSnapshot -> {
-            if (documentSnapshot.exists()) {
-                boolean currentStatus = Boolean.TRUE.equals(documentSnapshot.getBoolean("isBeingEdited"));
+            boolean isCurrentlyBeingEdited = documentSnapshot.exists() && documentSnapshot.getBoolean("isBeingEdited");
+            String currentUserId = documentSnapshot.getString("currentUserId");
 
-                if (!currentStatus) {
-                    // If not being edited, set the status and update the document
-                    setEditingStatus(isBeingEdited);
-                    updateDocument(title, description);
-                } else {
-                    Toast.makeText(MainActivity.this, "Document is currently being edited by another user.", Toast.LENGTH_SHORT).show();
-                }
-            } else {
-                // If the document doesn't exist, create it and set the status
-                setEditingStatus(isBeingEdited);
+            if (!isCurrentlyBeingEdited || (currentUserId != null && currentUserId.equals(user.getUid()))) {
+                updateEditingStatus(true);
                 updateDocument(title, description);
+            } else {
+                Toast.makeText(MainActivity.this, "Document is currently being edited by another user.", Toast.LENGTH_SHORT).show();
             }
+        }).addOnFailureListener(e -> {
+            Toast.makeText(MainActivity.this, "Error checking editing status", Toast.LENGTH_SHORT).show();
+            Log.e(TAG, "Error checking editing status", e);
         });
     }
-
-    private void setEditingStatus(boolean isBeingEdited) {
-        Map<String, Object> editingStatus = new HashMap<>();
-        editingStatus.put("isBeingEdited", isBeingEdited);
-
-        // Set the editing status in Firestore
-        db.collection("editingStatus").document("MyEditingStatus").set(editingStatus)
-                .addOnSuccessListener(unused -> {
-                    Log.d(TAG, "Editing status set");
-                    // After setting, update editing status to indicate no ongoing edits
-                    updateEditingStatus(false);
-                })
-                .addOnFailureListener(e -> Log.e(TAG, "Error setting editing status", e));
-    }
-
-
 
     private void updateDocument(String title, String description) {
         Map<String, Object> document = new HashMap<>();
         document.put(KEY_TITLE, title);
         document.put(KEY_DESCRIPTION, description);
 
-        // Save the document in Firestore
         db.collection("document").document("My first Document").set(document)
                 .addOnSuccessListener(unused -> {
                     Toast.makeText(MainActivity.this, "Document saved", Toast.LENGTH_SHORT).show();
-                    // After saving, update editing status to indicate no ongoing edits
-                    updateEditingStatus(false);
                 })
                 .addOnFailureListener(e -> {
                     Toast.makeText(MainActivity.this, "Error", Toast.LENGTH_SHORT).show();
-                    Log.d(TAG, e.toString());
-                    // If there's an error, update editing status to indicate no ongoing edits
-                    updateEditingStatus(false);
+                    Log.e(TAG, "Error saving document", e);
                 });
     }
-
-    private void updateEditingStatus(boolean isBeingEdited) {
-        DocumentReference editingStatusRef = db.collection("editingStatus").document("MyEditingStatus");
-
-        editingStatusRef.update("isBeingEdited", isBeingEdited)
-                .addOnSuccessListener(unused -> Log.d(TAG, "Editing status updated"))
-                .addOnFailureListener(e -> Log.e(TAG, "Error updating editing status", e));
-    }
-
 }
 

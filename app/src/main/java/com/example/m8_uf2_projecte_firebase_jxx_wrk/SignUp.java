@@ -23,6 +23,7 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 public class SignUp extends AppCompatActivity {
 
@@ -66,7 +67,7 @@ public class SignUp extends AppCompatActivity {
         });
 
         sign_up_btn.setOnClickListener(view -> {
-            Log.d(TAG, "Button clicked");
+
             email = String.valueOf(editTextEmail.getText());
             password = String.valueOf(editTextPassword.getText());
 
@@ -85,12 +86,25 @@ public class SignUp extends AppCompatActivity {
                 return;
             }
 
-            mAuth.createUserWithEmailAndPassword(email, password)
+            FirebaseFirestore.getInstance().collection("users")
+                    .get()
                     .addOnCompleteListener(task -> {
                         if (task.isSuccessful()) {
-                            Toast.makeText(SignUp.this, "Account created successfully.", Toast.LENGTH_SHORT).show();
+                            int userCount = task.getResult().size();
+                            if (userCount < 2) {
+                                mAuth.createUserWithEmailAndPassword(email, password)
+                                        .addOnCompleteListener(registrationTask -> {
+                                            if (registrationTask.isSuccessful()) {
+                                                Toast.makeText(SignUp.this, "Account created successfully.", Toast.LENGTH_SHORT).show();
+                                            } else {
+                                                Toast.makeText(SignUp.this, "Authentication failed.", Toast.LENGTH_SHORT).show();
+                                            }
+                                        });
+                            } else {
+                                Toast.makeText(SignUp.this, "Maximum users reached. Registration not allowed.", Toast.LENGTH_SHORT).show();
+                            }
                         } else {
-                            Toast.makeText(SignUp.this, "Authentication failed.", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(SignUp.this, "Error retrieving user data.", Toast.LENGTH_SHORT).show();
                         }
                     });
         });
