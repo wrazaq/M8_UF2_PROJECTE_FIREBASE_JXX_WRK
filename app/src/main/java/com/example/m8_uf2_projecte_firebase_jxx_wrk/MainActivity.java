@@ -115,24 +115,42 @@ public class MainActivity extends AppCompatActivity {
         String title = editTitle.getText().toString();
         String description = editDescription.getText().toString();
 
-        checkEditingStatus(title, description);
+        // Check and set editing status before updating the document
+        checkAndSetEditingStatus(true, title, description);
     }
 
-    private void checkEditingStatus(String title, String description) {
+    private void checkAndSetEditingStatus(boolean isBeingEdited, String title, String description) {
         DocumentReference editingStatusRef = db.collection("editingStatus").document("MyEditingStatus");
 
         editingStatusRef.get().addOnSuccessListener(documentSnapshot -> {
             if (documentSnapshot.exists()) {
-                boolean isBeingEdited = Boolean.TRUE.equals(documentSnapshot.getBoolean("isBeingEdited"));
+                boolean currentStatus = Boolean.TRUE.equals(documentSnapshot.getBoolean("isBeingEdited"));
 
-                if (!isBeingEdited) {
+                if (!currentStatus) {
+                    // If not being edited, set the status and update the document
+                    setEditingStatus(isBeingEdited);
                     updateDocument(title, description);
                 } else {
                     Toast.makeText(MainActivity.this, "Document is currently being edited by another user.", Toast.LENGTH_SHORT).show();
                 }
+            } else {
+                // If the document doesn't exist, create it and set the status
+                setEditingStatus(isBeingEdited);
+                updateDocument(title, description);
             }
         });
     }
+
+    private void setEditingStatus(boolean isBeingEdited) {
+        Map<String, Object> editingStatus = new HashMap<>();
+        editingStatus.put("isBeingEdited", isBeingEdited);
+
+        // Set the editing status in Firestore
+        db.collection("editingStatus").document("MyEditingStatus").set(editingStatus)
+                .addOnSuccessListener(unused -> Log.d(TAG, "Editing status set"))
+                .addOnFailureListener(e -> Log.e(TAG, "Error setting editing status", e));
+    }
+
 
     private void updateDocument(String title, String description) {
         Map<String, Object> document = new HashMap<>();
