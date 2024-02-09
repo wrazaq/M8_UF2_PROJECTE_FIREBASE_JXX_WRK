@@ -40,7 +40,6 @@ import java.util.Objects;
 public class MainActivity extends AppCompatActivity {
     private ActivityMainBinding binding;
     private FirebaseAuth auth;
-    private ImageButton logOut_button;
     private TextView user_details;
     FirebaseUser user;
     private static final String TAG = "MainActivity";
@@ -60,7 +59,6 @@ public class MainActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         auth = FirebaseAuth.getInstance();
-        logOut_button = binding.logoutBtn;
         user_details = binding.userDetails;
         user = auth.getCurrentUser();
         saveDocumentBtn = binding.saveDocumentBtn;
@@ -108,7 +106,6 @@ public class MainActivity extends AppCompatActivity {
                 .addOnFailureListener(e -> Log.e(TAG, "Error updating FCM token in Firestore", e));
     }
 
-
     public void saveDocument(View v) {
         String title = editTitle.getText().toString();
         String description = editDescription.getText().toString();
@@ -120,9 +117,8 @@ public class MainActivity extends AppCompatActivity {
 
         db.collection("editingStatus").document("MyEditingStatus")
                 .update("currentUserId", FieldValue.delete())
-                .addOnSuccessListener(aVoid -> Log.d(TAG, "Owner ID removed from editingStatus"))
-                .addOnFailureListener(e -> Log.e(TAG, "Error removing Owner ID from editingStatus", e));
-
+                .addOnSuccessListener(aVoid -> Log.d(TAG, "Current user ID removed from editingStatus"))
+                .addOnFailureListener(e -> Log.e(TAG, "Error removing current user ID from editingStatus", e));
 
         updateEditingStatus(false);
 
@@ -165,6 +161,22 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private void updateDocument(String title, String description) {
+        Map<String, Object> document = new HashMap<>();
+        document.put(KEY_TITLE, title);
+        document.put(KEY_DESCRIPTION, description);
+
+        db.collection("document").document("My first Document").set(document)
+                .addOnSuccessListener(unused -> {
+                    Toast.makeText(MainActivity.this, "Document saved", Toast.LENGTH_SHORT).show();
+
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(MainActivity.this, "Error", Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, "Error saving document", e);
+                });
+    }
+
     private void sendNotification() {
 
         String notificationMessage = "Another user is editing this document, try again later";
@@ -196,23 +208,6 @@ public class MainActivity extends AppCompatActivity {
         }
 
         notificationManager.notify(0 /* ID of notification */, notificationBuilder.build());
-    }
-
-
-    private void updateDocument(String title, String description) {
-        Map<String, Object> document = new HashMap<>();
-        document.put(KEY_TITLE, title);
-        document.put(KEY_DESCRIPTION, description);
-
-        db.collection("document").document("My first Document").set(document)
-                .addOnSuccessListener(unused -> {
-                    Toast.makeText(MainActivity.this, "Document saved", Toast.LENGTH_SHORT).show();
-
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(MainActivity.this, "Error", Toast.LENGTH_SHORT).show();
-                    Log.e(TAG, "Error saving document", e);
-                });
     }
 }
 
