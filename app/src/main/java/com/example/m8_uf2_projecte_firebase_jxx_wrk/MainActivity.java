@@ -18,6 +18,7 @@ import android.widget.Toast;
 import com.example.m8_uf2_projecte_firebase_jxx_wrk.databinding.ActivityMainBinding;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -45,9 +46,6 @@ public class MainActivity extends AppCompatActivity {
     private EditText editDescription;
     private Button saveDocumentBtn;
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
-
-    private static final String FCM_KEY = "BIAi3U33bHJWvrE9zQSg6pVnd87w5ZZSD1xh1x2XrHlfL-sqelLdjJwSmmAv1n3p2dUvV6SbL5WnFKffVwcewas"; // Replace with your FCM server key
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -117,19 +115,50 @@ public class MainActivity extends AppCompatActivity {
         String title = editTitle.getText().toString();
         String description = editDescription.getText().toString();
 
+        checkEditingStatus(title, description);
+    }
+
+    private void checkEditingStatus(String title, String description) {
+        DocumentReference editingStatusRef = db.collection("editingStatus").document("MyEditingStatus");
+
+        editingStatusRef.get().addOnSuccessListener(documentSnapshot -> {
+            if (documentSnapshot.exists()) {
+                boolean isBeingEdited = Boolean.TRUE.equals(documentSnapshot.getBoolean("isBeingEdited"));
+
+                if (!isBeingEdited) {
+                    updateDocument(title, description);
+                } else {
+                    Toast.makeText(MainActivity.this, "Document is currently being edited by another user.", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+    }
+
+    private void updateDocument(String title, String description) {
         Map<String, Object> document = new HashMap<>();
         document.put(KEY_TITLE, title);
         document.put(KEY_DESCRIPTION, description);
 
         // Save the document in Firestore
         db.collection("document").document("My first Document").set(document)
-                .addOnSuccessListener(unused -> Toast.makeText(MainActivity.this, "Document saved", Toast.LENGTH_SHORT).show())
+                .addOnSuccessListener(unused -> {
+                    Toast.makeText(MainActivity.this, "Document saved", Toast.LENGTH_SHORT).show();
+                    // After saving, update editing status to indicate no ongoing edits
+                    updateEditingStatus(false);
+                })
                 .addOnFailureListener(e -> {
                     Toast.makeText(MainActivity.this, "Error", Toast.LENGTH_SHORT).show();
                     Log.d(TAG, e.toString());
                 });
     }
 
+    private void updateEditingStatus(boolean isBeingEdited) {
+        DocumentReference editingStatusRef = db.collection("editingStatus").document("MyEditingStatus");
+
+        editingStatusRef.update("isBeingEdited", isBeingEdited)
+                .addOnSuccessListener(unused -> Log.d(TAG, "Editing status updated"))
+                .addOnFailureListener(e -> Log.e(TAG, "Error updating editing status", e));
+    }
 
 }
 
