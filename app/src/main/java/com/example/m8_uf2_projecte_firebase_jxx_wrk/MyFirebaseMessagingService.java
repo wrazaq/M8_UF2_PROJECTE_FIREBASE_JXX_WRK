@@ -18,19 +18,17 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
-        // TODO(developer): Handle FCM messages here.
-        // Not getting messages here? See why this may be: https://goo.gl/39bRNJ
         System.out.println("From: " + remoteMessage.getFrom());
 
-        // Check if message contains a notification payload.
         if (remoteMessage.getNotification() != null) {
            System.out.println("Message Notification Body: " + remoteMessage.getNotification().getBody());
         }
-
-        sendNotification(remoteMessage.getNotification().getBody());
+        sendNotification();
     }
 
-    private void sendNotification(String messageBody) {
+    private void sendNotification() {
+        String notificationMessage = "There's currently another user editing the document, try again later.";
+
         Intent intent = new Intent(this, MainActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0 /* Request code */, intent,
@@ -41,8 +39,8 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         NotificationCompat.Builder notificationBuilder =
                 new NotificationCompat.Builder(this, channelId)
                         .setSmallIcon(R.drawable.ic_notification)
-                        .setContentTitle("Document editing not available")
-                        .setContentText(messageBody)
+                        .setContentTitle("Document Editing Not Allowed")
+                        .setContentText(notificationMessage)
                         .setAutoCancel(true)
                         .setSound(defaultSoundUri)
                         .setContentIntent(pendingIntent);
