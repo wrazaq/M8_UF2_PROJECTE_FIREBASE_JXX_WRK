@@ -25,7 +25,6 @@
             </intent-filter>
         </service>
 
-
         <activity
             android:name=".SignUp"
             android:exported="false" />

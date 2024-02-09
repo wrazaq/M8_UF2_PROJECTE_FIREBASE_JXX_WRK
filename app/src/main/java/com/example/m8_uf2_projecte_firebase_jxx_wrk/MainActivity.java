@@ -1,5 +1,6 @@
 package com.example.m8_uf2_projecte_firebase_jxx_wrk;
 
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -13,16 +14,19 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+
 import com.example.m8_uf2_projecte_firebase_jxx_wrk.databinding.ActivityMainBinding;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.SetOptions;
-import com.google.firebase.messaging.FirebaseMessaging;
+import com.google.firebase.messaging.FirebaseMessagingService;
+import com.google.firebase.messaging.RemoteMessage;
 
-import java.nio.file.FileStore;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -40,8 +44,10 @@ public class MainActivity extends AppCompatActivity {
     private EditText editTitle;
     private EditText editDescription;
     private Button saveDocumentBtn;
-
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+    private static final String FCM_KEY = "BIAi3U33bHJWvrE9zQSg6pVnd87w5ZZSD1xh1x2XrHlfL-sqelLdjJwSmmAv1n3p2dUvV6SbL5WnFKffVwcewas"; // Replace with your FCM server key
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,12 +66,11 @@ public class MainActivity extends AppCompatActivity {
         editTitle = binding.editTextTitle;
         editDescription = binding.editTextDescription;
 
-        if (user == null){
+        if (user == null) {
             Intent intent = new Intent(getApplicationContext(), Login.class);
             startActivity(intent);
             finish();
-        }
-        else {
+        } else {
             user_details.setText(user.getEmail());
             updateToken();
 
@@ -108,7 +113,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    public void saveDocument(View v){
+    public void saveDocument(View v) {
         String title = editTitle.getText().toString();
         String description = editDescription.getText().toString();
 
@@ -116,10 +121,15 @@ public class MainActivity extends AppCompatActivity {
         document.put(KEY_TITLE, title);
         document.put(KEY_DESCRIPTION, description);
 
+        // Save the document in Firestore
         db.collection("document").document("My first Document").set(document)
-                .addOnSuccessListener(unused -> Toast.makeText(MainActivity.this, "Document saved", Toast.LENGTH_SHORT).show()).addOnFailureListener(e -> {
+                .addOnSuccessListener(unused -> Toast.makeText(MainActivity.this, "Document saved", Toast.LENGTH_SHORT).show())
+                .addOnFailureListener(e -> {
                     Toast.makeText(MainActivity.this, "Error", Toast.LENGTH_SHORT).show();
-                    Log.d(TAG,e.toString());
+                    Log.d(TAG, e.toString());
                 });
     }
+
+
 }
+
